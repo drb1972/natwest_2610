@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+  {
+      "id": "hlqChoice",
+      "type": "pickString",                  // Input type: Dropdown menu
+      "description": "Select HLQ:",
+      "options": ["PROD001.GUI*", "PROD001.CERT.*", "SYS.PARM*"],
+      "default": "DEV"
+    },
+    {
+      "id": "fileName",
+      "type": "promptString",
+      "description": "Enter hlq1:",
+      "default": "PROD001.B043.JCL"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "1. List Files from options",
+      "type": "shell",
+      "command": "zowe zos-files list ds ${input:hlqChoice}",
+      "problemMatcher": []
+    },
+    {
+      "label": "2. List Files by HLQ",
+      "type": "shell",
+      "command": "zowe zos-files list ds ${input:fileName}",
+      "problemMatcher": []
+    }
+  ]
+}

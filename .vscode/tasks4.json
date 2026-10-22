@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Full Mainframe Provisioning (Automated Defaults)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "1. Create zFS Dataset",
+        "2. Create USS Directory",
+        "3. Mount zFS File System",
+        "4. Upload PAX File to USS",
+        "5. Extract PAX File via SSH"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "1. Create zFS Dataset",
+      "type": "shell",
+      "command": "zowe zos-files create zfs HLQ.MYAPP.ZFS --size 100M",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "2. Create USS Directory",
+      "type": "shell",
+      "command": "zowe zos-files create uss-directory /u/myuser/myapp",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "3. Mount zFS File System",
+      "type": "shell",
+      "command": "zowe zos-workflows issue-command \"MOUNT FILESYSTEM('HLQ.MYAPP.ZFS') MOUNTPOINT('/u/myuser/myapp') TYPE(ZFS) MODE(RDWR)\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "4. Upload PAX File to USS",
+      "type": "shell",
+      "command": "zowe zos-files upload file-to-uss \"./dist/package.pax\" \"/u/myuser/myapp/package.pax\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "5. Extract PAX File via SSH",
+      "type": "shell",
+      "command": "zowe ssh issue command \"cd /u/myuser/myapp && pax -rf package.pax\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

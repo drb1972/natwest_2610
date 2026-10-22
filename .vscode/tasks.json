@@ -1,0 +1,99 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "zfsName",
+      "type": "promptString",
+      "description": "Enter zFS dataset name:",
+      "default": "HLQ.MYAPP.ZFS"
+    },
+    {
+      "id": "zfsSize",
+      "type": "promptString",
+      "description": "Enter zFS size (cylinders/megabytes):",
+      "default": "100M"
+    },
+    {
+      "id": "ussDir",
+      "type": "promptString",
+      "description": "Enter USS Directory path:",
+      "default": "/u/myuser/myapp"
+    },
+    {
+      "id": "localPaxPath",
+      "type": "promptString",
+      "description": "Enter local PAX file path:",
+      "default": "./dist/package.pax"
+    },
+    {
+      "id": "remotePaxName",
+      "type": "promptString",
+      "description": "Enter remote PAX file name:",
+      "default": "package.pax"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Run Full Mainframe Provisioning Sequence",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "1. Create zFS Dataset",
+        "2. Create USS Directory",
+        "3. Mount zFS File System",
+        "4. Upload PAX File to USS",
+        "5. Extract PAX File via SSH"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "1. Create zFS Dataset",
+      "type": "shell",
+      "command": "zowe zos-files create zfs ${input:zfsName} ",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "2. Create USS Directory",
+      "type": "shell",
+      "command": "zowe zos-files create uss-directory ${input:ussDir}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "3. Mount zFS File System",
+      "type": "shell",
+      "command": "zowe zos-workflows issue-command \"MOUNT FILESYSTEM('${input:zfsName}') MOUNTPOINT('${input:ussDir}') TYPE(ZFS) MODE(RDWR)\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "4. Upload PAX File to USS",
+      "type": "shell",
+      "command": "zowe zos-files upload file-to-uss \"${input:localPaxPath}\" \"${input:ussDir}/${input:remotePaxName}\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "5. Extract PAX File via SSH",
+      "type": "shell",
+      "command": "zowe ssh issue command \"cd ${input:ussDir} && pax -rf ${input:remotePaxName}\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

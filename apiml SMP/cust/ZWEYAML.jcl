@@ -1,0 +1,746 @@
+//ZWEYAML  JOB ACCT#,ZWEYAML,MSGLEVEL=(1,1),MSGCLASS=X,CLASS=A
+//*
+//* Copy instream data to a USS file using IEBGENER
+//*
+//MKDIR    EXEC PGM=BPXBATCH
+//STDOUT   DD SYSOUT=*
+//STDERR   DD SYSOUT=*
+//STDPARM  DD *,SYMBOLS=JCLONLY
+SH mkdir -p &ZOWEPATH.
+/*
+//*
+//STEP1    EXEC PGM=IEBGENER,COND=(0,NE,MKDIR)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//SYSUT1   DD *,SYMBOLS=JCLONLY
+################################################################################
+# This program and the accompanying materials are made available under the terms
+# of the Eclipse Public License v2.0 which accompanies this distribution, and is
+#  available at https://www.eclipse.org/legal/epl-v20.html
+#
+# SPDX-License-Identifier: EPL-2.0
+#
+# Copyright Contributors to the Zowe Project.
+################################################################################
+
+#===============================================================================
+# This is a YAML configuration file for a Zowe instance.
+#
+# YAML is a human-friendly data serialization language for all programming
+# languages.
+# To learn more about YAML specifications, please check https://yaml.org/.
+#
+# To learn more details about the content of this file, please check 
+# https://docs.zowe.org/.
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Zowe global configurations
+#
+# This section includes Zowe setup information used by
+# Zowe installation, configuration, and runtime.
+# It includes settings shared to all components and extensions.
+#
+# Configuration and runtime parameters unique to a component or extension
+# Will be located in the "components" section instead.
+#-------------------------------------------------------------------------------
+zowe:
+
+  #-----------------------------------------------------------------------------
+  # The setup section is used during setup only.
+  # It can be used by a variety of install and configure options,
+  # As seen in the documentation:
+  # https:
+  # //docs.zowe.org/stable/user-guide/zos-components-installation-checklist
+  #-----------------------------------------------------------------------------
+  setup:
+    jcl:
+      # When enabled, "zwe install and init" will use job submission for system 
+      # changes instead of shell commands. A `--dry-run` option is also enabled
+      # which allows you to see jobs instead of submitting.
+      enable: true
+      # Edit to set a header for job cards. Some systems need this, but not all.
+      # See `zwe init generate --help` for examples.
+      header: ""
+    # MVS data set related configurations
+    dataset:
+      # where Zowe MVS data sets will be installed
+      prefix: &HLQ..&PRDID..&VER
+      # PROCLIB where Zowe STCs will be copied over
+      proclib: PRODUCT.PROCLIB
+      # Zowe PARMLIB
+      parmlib: PRODUCT.PARMLIB
+      # Holds Zowe PARMLIB members for plugins
+      parmlibMembers:
+        # For ZIS plugins
+        zis: ZWESIP00
+      # JCL library where Zowe will store temporary JCLs during initialization
+      jcllib: &HLQ..&PRDID..&VER..JCLLIB
+      # Utilities for use by Zowe and extensions
+      loadlib: &HLQ..&PRDID..&VER..SZWELOAD
+      # APF authorized LOADLIB for Zowe
+      authLoadlib: &HLQ..&PRDID..&VER..SZWEAUTH
+      # APF authorized LOADLIB for Zowe ZIS Plugins
+      authPluginLib: &HLQ..&PRDID..&VER..ZWESAPL
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # # Security related configurations. This setup is optional.
+    security:
+    #   # security product name. Can be RACF, ACF2 or TSS
+      product: RACF
+    #   # security group name
+      groups:
+        admin: ZWEADMIN
+        stc: ZWEADMIN
+        sysProg: ZWEADMIN
+    #   # security user name
+      users:
+    #     # Zowe runtime user name of main service
+        zowe: ZWESVUSR
+    #     # Zowe runtime user name of ZIS
+        zis: ZWESIUSR
+    #   # STC names
+      stcs:
+    #     # STC name of Zowe main service
+        zowe: ZWESLSTC
+    #     # STC name of Zowe ZIS
+        zis: ZWESISTC
+    #     # STC name of Zowe ZIS Auxiliary Server
+        aux: ZWESASTC
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # Certificate related configurations
+    #
+    # There are 5 configurations cases. Please choose one from below.
+
+    # >>>> Certificate setup scenario 1
+    # PKCS12 (keystore) with Zowe generate certificates.
+    # certificate:
+      # Type of certificate storage. Valid values are: PKCS12, JCERACFKS. APIML 
+      # additionally supports: JCEKS, JCECCAKS, JCECCARACFKS, or JCEHYBRIDRACFKS
+      # type: PKCS12
+      # pkcs12:
+        # directory: /var/zowe/keystore
+        # # Lock the keystore directory to only accessible by Zowe runtime user 
+        # # and group.
+        # lock: true
+        # # Certificate alias name. Optional, default value is localhost.
+        # # Note: please use all lower cases as alias.
+        # name: localhost
+        # # Keystore password. Optional, default value is password.
+        # password: password
+        # # Alias name of self-signed certificate authority. Optional, default 
+        # # value is local_ca.
+        # # Note: please use all lower cases as alias.
+        # caAlias: local_ca
+        # # Password of keystore stored self-signed certificate authority. 
+        # # Optional, default value is local_ca_password.
+        # caPassword: 
+      # # Distinguished name for Zowe generated certificates. All optional.
+      # dname:
+      #   caCommonName: ""
+      #   commonName: ""
+      #   orgUnit: ""
+      #   org: ""
+      #   locality: ""
+      #   state: ""
+      #   country: ""
+      # # Validity days for Zowe generated certificates
+      # validity: 3650
+      # # Domain names and IPs should be added into certificate SAN
+      # # If this field is not defined, `zwe init` command will use
+      # # `zowe.externalDomains`.
+      # san:
+      #  # sample domain name
+      #  - dvipa.example.com
+      #  # sample IP address
+      #  - 12.34.56.78
+
+    # # >>>> Certificate setup scenario 2
+    # # PKCS12 (keystore) with importing certificate generated by other CA.
+    # certificate:
+    #   # Type of certificate storage. Valid values are: PKCS12, JCERACFKS. 
+    # # APIML additionally supports: JCEKS, JCECCAKS, JCECCARACFKS, or 
+    # # JCEHYBRIDRACFKS
+    #   type: PKCS12
+    #   pkcs12:
+    #     directory: /var/zowe/keystore
+    #     # Lock the keystore directory to only accessible by Zowe runtime user 
+    #     # and group.
+    #     lock: true
+    #     # # Certificate alias name. Optional, default value is localhost.
+    #     # # Note: please use all lower cases as alias.
+    #     # name: localhost
+    #     # # Keystore password. Optional, default value is password.
+    #     # password: ""
+    #     import:
+    #       # Existing PKCS12 keystore which holds the certificate issued by 
+    #       # external CA.
+    #       keystore: ""
+    #       # Password of the above keystore
+    #       password: ""
+    #       # Certificate alias will be imported
+    #       # Note: please use all lower cases as alias.
+    #       alias: ""
+    #   # PEM format certificate authorities will also be imported and trusted.
+    #   importCertificateAuthorities:
+    #     # Path to the certificate authority signed the certificate will be 
+    #     # imported.
+    #     - ""
+
+    # # >>>> Certificate setup scenario 3
+    # # Zowe generated z/OS Keyring with Zowe generated certificates.
+    # certificate:
+    #   # Type of certificate storage. Valid values are: PKCS12, JCERACFKS. 
+    #   # APIML additionally supports: JCEKS, JCECCAKS, JCECCARACFKS, or 
+    #   # JCEHYBRIDRACFKS
+    #   type: JCERACFKS
+    #   keyring:
+    #     name: ZoweKeyring
+    #     # # Label of Zowe certificate. Default value is localhost.
+    #     label: localhost
+    #     # # label of Zowe CA certificate. Default value is localca.
+    #     caLabel: localca
+    #   # # Distinguished name for Zowe generated certificates. All optional.
+    #   # dname:
+    #   #   caCommonName: ""
+    #   #   commonName: ""
+    #   #   orgUnit: ""
+    #   #   org: ""
+    #   #   locality: ""
+    #   #   state: ""
+    #   #   country: ""
+    #   # # Validity days for Zowe generated certificates
+    #   # validity: 3650
+    #   # # Domain names and IPs should be added into certificate SAN
+    #   # # If this field is not defined, `zwe init` command will use
+    #   # # `zowe.externalDomains`.
+    #   # # **NOTE**: due to the limitation of RACDCERT command, this field 
+    #   # # should contain exactly 2 entries with the domain name and IP 
+    #   # address.
+    #   # san:
+    #   #   - dvipa.example.com
+    #   #   - 12.34.56.78
+
+    # >>>> Certificate setup scenario 4
+    # Zowe generated z/OS Keyring and connect to existing certificate
+    certificate:
+      # Type of certificate storage. Valid values are: PKCS12, JCERACFKS. 
+      # APIML additionally supports: JCEKS, JCECCAKS, JCECCARACFKS, or 
+      # JCEHYBRIDRACFKS
+      # type: JCERACFKS
+      # keyring:
+      #   name: ZoweKeyring
+      #   connect:
+      #     # Current owner of the existing certificate, can be SITE or an user 
+      #     # ID.
+      #     user: CERTSITE
+      #     # Label of the existing certificate will be connected to Zowe 
+      #     # keyring. If not specified, the default value is ROOTSTAR.
+      #     label: "ROOTSTAR"
+      #   zOSMF:
+      #     ca: DIGIROOT
+      #  san:
+        # - "1.2.3.4"
+      # If you have other certificate authorities want to be trusted in Zowe 
+      # keyring, list the certificate labels here.
+      # **NOTE**, due to the limitation of RACDCERT command, this field should
+      # contain maximum 2 entries.
+      # importCertificateAuthorities:
+      #   - DIGIGEOT
+
+    # # >>>> Certificate setup scenario 5
+    # # Zowe generated z/OS Keyring with importing certificate stored in data 
+    # # set
+    # certificate:
+    #   # Type of certificate storage. Valid values are: PKCS12, JCERACFKS. 
+    # # APIML additionally supports: JCEKS, JCECCAKS, JCECCARACFKS, or 
+    # # JCEHYBRIDRACFKS
+    #   type: JCERACFKS
+    #   keyring:
+    #     name: ZoweKeyring
+    #     # # Label of Zowe certificate. Default value is localhost.
+    #     label: localhost
+    #     import:
+    #       # Name of the data set holds the certificate issued by other CA.
+    #       # This data set should be in PKCS12 format and contain private key.
+    #       dsName: ""
+    #       password: ""
+    #     # If zowe.verifyCertificates is not DISABLED, zOSMF certificate
+    #     # Will be registered with the truststore. You can customize how this 
+    #     # is performed here.
+    #     zOSMF:
+    #       ca: "_auto_"
+    #       user: "IZUSVR"
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # VSAM configurations if you are using VSAM as Caching Service storage
+    vsam:
+      # VSAM data set with Record-Level-Sharing enabled or not
+      # Valid values could be: NONRLS or RLS.
+      mode: NONRLS
+      # Volume name if you are using VSAM in NONRLS mode
+      volume: ""
+      # Storage class name if you are using VSAM in RLS mode
+      storageClass: ""
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Zowe runtime (root) directory
+  #
+  # **NOTE**: 
+  # 1. if it is not specified and you passed "--update-config" argument
+  # when you ran "zwe init" command, this value will be updated with the Zowe
+  # runtime where the "zwe" command is located.
+  #
+  # 2. the runtime directory is designed to be "read only". This is different 
+  # from the log, workspace, and extension directories. Setting those three to 
+  # the same parent folder as the runtime directory is unsupported and may cause
+  # issues
+  #
+  # This value is required by ZWESLSTC to know where is Zowe runtime.
+  runtimeDirectory: "&ZOWEPATH"
+
+  # Where to store runtime logs
+  logDirectory: &ZOWEPATH./instance/logs
+
+  # Zowe runtime workspace directory
+  workspaceDirectory: &ZOWEPATH./instance/workspace
+
+  # Where extensions are installed
+  extensionDirectory: &ZOWEPATH./instance/extensions
+
+  configmgr:
+    # STRICT=quit on any error, including missing schema
+    # COMPONENT-COMPAT=if component missing schema, skip it with warning 
+    # instead of quit
+    validation: "STRICT"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # runtime z/OS job name
+  job:
+    # Zowe JES job name
+    name: ZWE1SV
+    # Prefix of component address space
+    prefix: ZWE1
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # This is an ID you use to separate multiple Zowe installs when determining
+  # resource names used in RBAC authorization checks such as dataservices with 
+  # RBAC expects this ID in SAF resources
+  rbacProfileIdentifier: "1"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # This is an ID that can be used by servers that distinguish their cookies 
+  # from unrelated Zowe installs, for purposes such as to allow multiple copies 
+  # of Zowe to be used within the same client
+  cookieIdentifier: "1"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # You can list your external domains on how you want to access Zowe.
+  # This should be the domain list you would like to put into your web browser
+  # address bar.
+  externalDomains:
+    # this should be the domain name to access Zowe APIML Gateway
+    - &HOST
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # This is the port you use to access Zowe Gateway from your web browser.
+  #
+  # In many use cases, this should be same as `components.gateway.port`. But in
+  # some use cases, like containerization, this port could be different.
+  externalPort: 7554
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  #
+  # In this section, behavior such as which TLS levels, ciphers should be used, 
+  # and if native TLS versus AT-TLS should be used.
+  # See the schema for options.
+  #
+  # This section applies to all components that support it.
+  #
+  # This section can be overridden per-component by placing it
+  # under a "zowe" subsection of a component, as in 
+  # "components.zss.zowe.network"
+  network:
+    server:
+      tls:
+        attls: false
+        # TLS settings only apply when attls=false
+        # Else you must use AT-TLS configuration for TLS customization.
+        minTls: "TLSv1.2"
+        maxTls: "TLSv1.3"
+    client:
+      tls:
+        attls: false
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # You can un-comment and define any extra environment variables as key/value
+  # pairs here.
+  # environments:
+  #   # Example of a global environment variable for all components
+  #   MY_ENV_VAR: my_env_val
+
+  #   # Another example to customize SSH port for VT Terminal Desktop app
+  #   ZWED_SSH_PORT: 22
+  #   ZWED_TN3270_PORT: 23
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # You can define any Zowe message portions to be checked for and the message 
+  # added to the system log upon its logging, truncated to 126 characters 
+  # (wildcards are not supported).
+  # Setting "sysMessageTrim" to true will omit any text found before the match 
+  # on the line.
+  sysMessageTrim: false
+  sysMessages:
+  #   # Zowe starting
+    - "ZWEL0021I"
+  #   # Zowe started
+    - "ZWEL0018I"
+    - "ZWEL0006I"
+  #   # Zowe ready to use
+    - "ZWES1601I"
+  #   # Zowe stopping
+    - "ZWEL0008I"
+  #   # Zowe stopped
+    - "ZWEL0022I"
+  #   # Zowe components starting
+    - "ZWEL0001I"
+  #   # Zowe components stopped
+    - "ZWEL0002I"
+  #   # API ML components ready
+    - "ZWEAM000I"
+  #   # App server ready
+    - "ZWED0031I"
+  #   # ZSS ready
+    - "ZWES1013I"
+
+  #   # Not limited to Zowe message IDs, you can specify your own string for 
+  #   # example:
+  #   - "ERROR"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Enable debug mode for Zowe launch scripts
+  launchScript:
+    # Set to "debug" or "trace" to display extra debug information
+    logLevel: "info"
+    # Set to "exit" if you would like startup to exit if any component has an 
+    # error in the configure stage, otherwise zwe will warn but continue.
+    onComponentConfigureFail: "warn"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Zowe certificate
+  #
+  # This section defines the certificate and certificate authorities used by 
+  # Zowe.
+  # Do not confuse this with "zowe.setup.certificate"
+  # That is for creation of certificates, this is for stating which Zowe should 
+  # use.
+  certificate:
+    keystore:
+      type: JCERACFKS
+      # if keyrings, the format is safkeyring:////stcusername/KeyName
+      file: "safkeyring://ZWESVUSR/ZoweKeyring"
+      # "password" should either be the value you set when PKCS12, or literally 
+      # "password" for keyrings.
+      password: password
+      # alias is the name of your key/cert. When using keyrings, get the Case 
+      # Sensitive, Space Sensitive value in a TSO list ring.
+      alias: "ROOTSTAR"
+    truststore:
+      # truststore usually has same values as keystore (minus alias), but can be
+      # different if desired.
+      type: JCERACFKS
+      file: "safkeyring://ZWESVUSR/ZoweKeyring"
+      password: password
+    pem:
+      key: ""
+      certificate: ""
+      #  if keyrings, the format is "safkeyring:////stcusername/KeyName&ca name"
+      certificateAuthorities: "safkeyring://ZWESVUSR/ZoweKeyring&DigiCert CA"
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # How we want to verify SSL certificates of services. Valid values are:
+  # - STRICT:    will validate if the certificate is trusted in our trust store 
+  #              and if the certificate Command Name and Subject Alternative 
+  #              Name (SAN)is validate. This is recommended for the best 
+  #              security.
+  # - NONSTRICT: will validate if the certificate is trusted in our trust store.
+  #              This mode does not validate certificate Common Name and Subject
+  #              Alternative Name (SAN).
+  # - DISABLED:  disable certificate validation. This is NOT recommended for
+  #              security.
+  verifyCertificates: NONSTRICT
+
+
+#-------------------------------------------------------------------------------
+# Java configuration
+#
+# Some Zowe components requires Java. Define the path where you have your Java
+# is installed.
+#
+# **NOTE**: this field can be updated automatically if you pass 
+# `--update-config` to `zwe init` command.
+#-------------------------------------------------------------------------------
+java:
+  # If Java is installed to /usr/lpp/java/bin/java
+  # Then put "/usr/lpp/java" here, excluding "/bin/java".
+  home: "&JAVAHOME"
+
+
+#-------------------------------------------------------------------------------
+# Node.js configuration
+#
+# The app-server component requires Node.JS.
+# If you are not using the app-server or an extension requiring Node.JS
+# Then you do not need to edit this section.
+#
+# **NOTE**: this field can be updated automatically if you pass 
+# "--update-config" to `zwe init` command.
+#-------------------------------------------------------------------------------
+node:
+  # If Node.JS is installed to /usr/lpp/IBM/cnj/bin/node
+  # Then put "/usr/lpp/IBM/cnj" here, excluding "/bin/node".
+  home: "&NODEHOME"
+
+
+#-------------------------------------------------------------------------------
+# z/OSMF configuration
+#
+# If your Zowe instance is configured to use z/OSMF for authentication or other
+# features. You need to define how to access your z/OSMF instance.
+#-------------------------------------------------------------------------------
+zOSMF:
+  # Host name of your z/OSMF instance
+  host: &HOST
+  port: 1443
+  applId: IZUDFLT
+
+
+#-------------------------------------------------------------------------------
+# Zowe components default configurations
+#
+# This section includes default configurations for all Zowe components installed
+# on the Zowe instance.
+#
+# Every component should define their own section under `components` with their
+# component ID.
+#
+# For each component, they can always have "enabled" property and "certificate"
+# property. More configurations for each component can be found in component
+# manifest file.
+#-------------------------------------------------------------------------------
+components:
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  apiml:
+    enabled: true
+    debug: false
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  gateway:
+    enabled: true
+    port: 7554
+    debug: false
+    apiml:
+      security:
+        auth:
+          # Provider can be "saf" or "zosmf".
+          # See documentation at https:
+        # //docs.zowe.org/stable/user-guide/authentication-providers-for-apiml/
+          #
+          # When provider is "saf", z/OSMF is not needed for Zowe login,
+          # but then z/OSMF APIs authenticate using PassTickets, which requires 
+          # setup in z/OSMF.
+          provider: saf
+          # If provider is "zosmf", uncomment the following.
+          # jwtAutoconfiguration can be "jwt" or "ltpa", but jwt is recommended.
+          # jwt requires zosmf configuration.
+          #
+          # zosmf:
+          #   jwtAutoconfiguration: jwt
+          #   serviceId: ibmzosmf
+        authorization:
+          endpoint:
+            enabled: false
+          provider: "native"
+        x509:
+          # If you are using keyrings, you need to enable x509.enabled to true.
+          enabled: true
+        # oidc:                                                       
+        #   enabled: true                                             
+        #   registry: broadcom.okta.com                               
+        #   jwks:                                                     
+        #     uri: https://mylogin.broadcom.com/default/oauth2/v1/jwks
+        # personalAccessToken:                                        
+        #   enabled: true 
+        # allowtokenrefresh: true 
+
+    # If we customize this to use different external certificate, than should 
+    # also define "server.internal.ssl.certificate" and enable 
+    # "server.internal.ssl.enabled".
+    # certificate:
+    #   keystore:
+    #     alias: ""
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  zaas:
+    enabled: true
+    port: 7558
+    debug: false
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  api-catalog:
+    enabled: true
+    port: 7552
+    debug: false
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  discovery:
+    enabled: true
+    port: 7553
+    debug: false
+    # Define this value to match your number of Discovery StatefulSet if you are
+    # running containerized Zowe
+    # replicas: 1
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  caching-service:
+    enabled: true
+    port: 7555
+    debug: false
+
+    storage:
+      evictionStrategy: reject
+      # can be infinispan, inMemory, redis or VSAM(deprecated)
+      mode: infinispan
+      infinispan:
+        # this is required if storage mode is infinispan
+        jgroups:
+          port: 7600
+          keyExchange:
+            port: 7601
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  app-server:
+    enabled: true
+    port: 7556
+    debug: false
+    # we can customize any component with custom certificate
+    # the missing definitions will be picked from "zowe.certificate"
+    # certificate:
+    #   keystore:
+    #     alias: app-server
+    #   pem:
+    #     key: /global/zowe/keystore/localhost/localhost.keystore.app-server.key
+    #     certificate: 
+    #     /global/zowe/keystore/localhost/
+    #     localhost.keystore.app-server.cer-ebcdic
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  zss:
+    enabled: true
+    port: 7557
+    crossMemoryServerName: ZWESIS_STD
+    agent:
+      64bit: true
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Requires z/OSMF APIs. Ensure z/OSMF is available,
+  # And ensure gateway auth provider is either "saf" with z/OSMF passtickets 
+  # enabled, Or that the provider is set to "zosmf"
+  explorer-jes:
+    enabled: true
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Requires z/OSMF APIs. Ensure z/OSMF is available,
+  # And ensure gateway auth provider is either "saf" with z/OSMF passtickets 
+  # enabled, Or that the provider is set to "zosmf"
+  explorer-mvs:
+    enabled: true
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Requires z/OSMF APIs. Ensure z/OSMF is available,
+  # And ensure gateway auth provider is either "saf" with z/OSMF passtickets 
+  # enabled, Or that the provider is set to "zosmf"
+  explorer-uss:
+    enabled: true
+
+  # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  # Each extension can have dedicated definition similar to core components.
+  # my-extension:
+  #   enabled: true
+
+
+#-------------------------------------------------------------------------------
+# Zowe high availability instances customizations
+#
+# This section includes customizations for each Zowe high availability instance.
+#
+# You can start each HA instance with `zwe start --ha-instance <ha-instance>`.
+#-------------------------------------------------------------------------------
+# haInstances:
+#
+#   # HA instance ID
+#   lpar1:
+#     # hostname where this instance will be started
+#     hostname: lpar1.example.com
+#     # Your (ampersand)SYSNAME for this LPAR
+#     # This sysname will be used to route your JES command to target system.
+#     sysname: LPR1
+#     # for this HA instance, we did not customize "components", so it will use 
+#     # default value.
+
+#   # HA instance ID, we will start 2 instances on LPAR2
+#   # **NOTE**, we can only start one Gateway in same LPAR.
+#   lpar2a:
+#     # hostname where this instance will be started
+#     hostname: lpar2.example.com
+#     # Your (ampersand)SYSNAME for this LPAR
+#     # This sysname will be used to route your JES command to target system.
+#     sysname: LPR2
+
+#     # These configurations will overwrite highest level default "components" 
+#     # configuration
+#     components:
+#       discovery:
+#         # use customized port on this instance
+#         port: 17553
+#       api-catalog:
+#         port: 17552
+#       app-server:
+#         # no app-server in this instance
+#         enabled: false
+#       zss:
+#         # no app-server in this instance
+#         enabled: false
+#       caching-service:
+#         port: 17555
+#
+#   lpar2b:
+#     hostname: lpar2.example.com
+#     # your (ampersand)SYSNAME for this LPAR
+#     sysname: LPR2
+
+#     # These configurations will overwrite highest level default "components" 
+#     # configuration
+#     components:
+#       zaas:
+#         enabled: false
+#       gateway:
+#         enabled: false
+#       discovery:
+#         enabled: false
+#       api-catalog:
+#         enabled: false
+#       app-server:
+#         enabled: false
+#         port: 28544
+#       zss:
+#         port: 28542
+#       caching-service:
+#         enabled: false
+/*
+//SYSUT2   DD PATH='&ZOWEPATH./zowe.yaml',
+//            PATHOPTS=(OWRONLY,OCREAT,OTRUNC),
+//            PATHMODE=(SIRUSR,SIWUSR,SIRGRP,SIROTH),
+//            FILEDATA=TEXT

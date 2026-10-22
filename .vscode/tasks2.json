@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+  {
+      "id": "zfsName",
+      "type": "promptString",
+      "description": "Enter zfsName:",
+      "default": "SYSZWE.ZOWE.V350.ZFS"
+  },
+  {
+      "id": "directory",
+      "type": "promptString",
+      "description": "Enter directory:",
+      "default": "/software/zowe/v3.5.0"
+  }
+  ],
+  "tasks": [
+        {
+      "label": "1. Create ZFS",
+      "type": "shell",
+      "command": "zowe zos-files create zos-file-system ${input:zfsName} --cyls-pri 500 --cyls-sec 140 --group ZWEADMIN --owner ZWESVUSR --perms 777 --timeout 300 --response-timeout 300",
+      "problemMatcher": []
+    },
+    {
+      "label": "2. Create Directory",
+      "type": "shell",
+      "command": "zowe zos-files create uss-directory ${input:directory} --mode rwxr-xr-x",
+      "problemMatcher": []
+    },
+    {
+      "label": "3. Mount File System",
+      "type": "shell",
+      "command": "zowe zos-files mount file-system ${input:zfsName} ${input:directory} --fs-type ZFS --mode rdwr",
+      "problemMatcher": []
+    }
+  ]
+}
